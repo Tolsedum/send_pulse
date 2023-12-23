@@ -33,70 +33,83 @@
 
 namespace App\Mailing\send_pulse\Request;
 
+use App\Mailing\ApiSettings;
 use App\Mailing\IApiRequest;
-use App\Mailing\send_pulse\Api\ApiRequest;
-use App\Mailing\send_pulse\ExceptionSendPulse;
+use App\Mailing\Request;
+use App\Mailing\send_pulse\Api\ApiDataRequest;
+
+use Exception;
+use ReflectionClass;
 
 class SendManager implements IApiRequest{
-    /** @var string API access key */
-    protected $api_key;
-    /** @var string API server message language (currently supported ru, en, ua) */
-    protected $lang;
-    /** @var bool  */
-    protected $compression = false;
-
-    protected ApiRequest $apiRequest;
+    protected ApiDataRequest $apiRequest;
+    protected ApiSettings $apiSettings;
 
     /**
-     * @param string $api_key 
-     * @param string $lang
-     * @param bool $compression
+     * @param array $param [
+     *      @param string 'client_id'     : value     
+     *      @param string 'grant_type'    : value
+     *      @param string 'client_secret' : value
+     *      @param string 'access_token'  : value
+     *      @param string 'token_type'    : value
+     *      @param bool   'expires_in'    : value
+     * ]
      */
     public function __construct(array $param){
-        if(empty($param["api_key"])){
-            // throw new ExceptionSendPulse(ExceptionSendPulse::);
-        }else{
-            $this->api_key = $param["api_key"];
+        $this->apiSettings = new ApiSettings ([
+                "settings" => $param,
+                "model" => $this->getModel()
+            ],
+            [
+                "grant_type" => "client_credentials",
+                "client_id" => null,
+                "client_secret" => null,
+                "access_token" => null,
+                "token_type" => "Bearer",
+                "expires_in" => null
+            ]
+        );
+        $this->apiRequest = new ApiDataRequest();
+    }
+
+    public function saveSettings(){
+        $settings = $this->apiSettings->getSettings();
+        if(empty($settings["access_token"])){
+            $settings = $this->getAccessToken($settings);
+            $settings["model"] = $this->getModel();
+            $this->apiSettings->initObject($settings);
         }
-        foreach ([
-            "lang" => "ru",
-            "compression" => false
-        ] as $_param => $default) {
-            if(isset($param[$_param])){
-                $this->{$_param} = $param[$_param];
-            }else{
-                $this->{$_param} = $default;
-            }
+        $this->apiSettings->saveSettings();
+
+    }
+    protected function getAccessToken($settings){
+        $respons = Request::send([
+            "method" => "post",
+            "data" => $settings,
+            "url" => $this->getRequestUrl("oauth/access_token")
+        ]);
+        $data = $respons->getJson();
+        if(isset($data["error"])){
+            throw new Exception($data["message"], 1);
         }
-        $this->apiRequest = new ApiRequest(); 
+        $settings = array_merge($settings, $respons->getJson());
+        return $settings;
+    }
+
+    public function getModel(){
+        return "send_pulse";
     }
 
     /**
      * Get unisender api host
      * @return string
      */
-    protected function getApiHost(){
-        return sprintf('https://api.sendpulse.com', $this->lang);
+    protected function getApiHost($path){
+        return sprintf('https://api.sendpulse.com/%s', $path);
     }
 
-    protected function getRequestUrl($methode){
-        $url = $this->getApiHost()
-            . $methode 
-            . "?format=json";
-
-        if ($this->compression) {
-            $url .= '&request_compression=bzip2';
-        }else{
-            $url .= "&api_key=" . $this->api_key;
-        }
-        return $url;
-    }
-
-    protected function compresData($url, &$request_params){
-        if ($this->compression) {
-            $request_params = [];
-            return $url . "/" .bzcompress(http_build_query($request_params));
-        } 
+    protected function getRequestUrl($path){
+        $url = $this->getApiHost($path);
         return $url;
     }
 
@@ -108,12 +121,13 @@ class SendManager implements IApiRequest{
                 // throw new ExceptionUnisender(ExceptionUnisender::EMPTY_PARAMS, $var);
             }
         }
+        $settings = $this->apiSettings->getSettings();
+        $extra["headers"][] = 'Authorization: ' 
+            . $settings["token_type"] 
+            . ' ' . $settings["access_token"];
         return [
             "method" => $method,
-            "url" => $this->compresData(
-                $this->getRequestUrl($url_part),
-                $data
-            ),
+            "url" => $this->getRequestUrl($url_part),
             "data" => $data,
             "extra" => $extra
         ];

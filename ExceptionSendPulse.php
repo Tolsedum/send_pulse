@@ -162,6 +162,9 @@ class ExceptionSendPulse extends Exception{
     /** More than 10 requests per second */
     const MORE_REQUESTS_SECOND = 2020202020;
 
+    const METHOD_IS_NOT_EXISTS = "method_is_not_exists";
+    const EMPTY_PARAMS = "empty_params";
+
 
     protected $language_local = "ru";
 
