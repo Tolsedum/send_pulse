@@ -111,10 +111,74 @@ trait Contacts{
         ];
     }
 
+    /**
+     * Получить информацию о списке рассылки 
+     * @link https://sendpulse.com/ru/integrations/api/bulk-email#edit-list
+     * @return array [
+     *      url => url запроса
+     *      название параметра => обязательный ли он
+     *      int id Идентификатор списка рассылки
+     * ]
+     */
+    protected function getBoock($params){
+        return [
+            "pattern" => [
+                "id" => true,
+            ],
+            "url" => "addressbooks/" . isset($params["id"]) ? $params["id"] : "",
+            "method" => "get"
+        ];
+    }
 
+    /**
+     * Получение списка переменных для списка рассылки
+     * @link https://sendpulse.com/ru/integrations/api/bulk-email#variables
+     * @return array [
+     *      url => url запроса
+     *      название параметра => обязательный ли он
+     *      int id Идентификатор списка рассылки
+     * ]
+     */
+    protected function getBoockParams($params){
+        return [
+            "pattern" => [
+                "id" => true,
+            ],
+            "url" => "addressbooks/" 
+                . isset($params["id"]) ? $params["id"] : "" 
+                . "/variables",
+            "method" => "get"
+        ];
+    }
 
-
-
+    /**
+     * Получить список писем из списка рассылки
+     * @link https://sendpulse.com/ru/integrations/api/bulk-email#lists-emails
+     * @return array [
+     *      url => url запроса
+     *      название параметра => обязательный ли он
+     *      int id Идентификатор списка рассылки
+     *      int limit Количество записей необязательно
+     *      int offset Смещение (первая запись для отображения)
+     *      bool active Используйте этот параметр, чтобы получить список контактов со статусами "Активный" и "Новый".
+     *      bool not_active	Используйте этот параметр, чтобы получить список неактивных контактов. Подробнее "Электронная почта
+     * ]
+     */
+    protected function getListMails($params){
+        return [
+            "pattern" => [
+                "id" => true,
+                "limit" => false,
+                "offset" => false,
+                "active" => false,
+                "not_active" => false,
+            ],
+            "url" => "addressbooks/" 
+                . isset($params["id"]) ? $params["id"] : "" 
+                . "/emails",
+            "method" => "get"
+        ];
+    }
 
     
 

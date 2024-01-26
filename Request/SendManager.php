@@ -136,7 +136,7 @@ class SendManager implements IApiRequest{
     /**
      * Получение списка групп контактов
      */
-    public function getContactList(array $param = []){
+    public function getContactGroup(array $param = []){
         $request_data = $this->apiRequest->getLists();
         return $this->getReturnParams($request_data);
     }
@@ -150,7 +150,7 @@ class SendManager implements IApiRequest{
      * ]
      *      
      */
-    public function addContactList(array $param){
+    public function addContactGroup(array $param){
         $request_data = $this->apiRequest->createList($param);
         return $this->getReturnParams($request_data);
     }
@@ -164,7 +164,7 @@ class SendManager implements IApiRequest{
      *      string after_subscribe_url   => URL для редиректа на страницу «после подписки»
      * ]
      */
-    public function updateContactList(array $param){
+    public function updateContactGroup(array $param){
         $request_data = $this->apiRequest->updateList($param);
         return $this->getReturnParams($request_data);
     }
